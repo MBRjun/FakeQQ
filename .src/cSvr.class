@@ -10,17 +10,14 @@ Public Nbr_Clients As Integer = 0
 Public Distant_Host As String
 
 Public Sub Socket_Read()
-
   Dim sCad As String
-  Dim page_html As String
+  Dim response As String
   Dim req_str As String[]
-  Dim args_str As String[]
-  Dim html_lect As String
   
   Read #Last, sCad, Lof(Last)
   req_str = Parse_Request(sCad)
-  page_html = "HTTP/1.1 200 OK" & gb.crlf & gb.crlf
-  Write #Last, page_html, Len(page_html)
+  response = "HTTP/1.1 200 OK" & gb.crlf & gb.crlf
+  Write #Last, response, Len(response)
   Close #Last
   Clients.Remove(Clients.Find(Last))
   frmMain.TriggerMessage(JSON.Decode(req_str[2]))
@@ -31,7 +28,6 @@ Public Sub Socket_Closed()
 End
 
 Public Sub Srv_Connection(Host As String)
-
    Dim MySock As Socket
    MySock = Srv.Accept()
    Clients.Add(MySock)
@@ -45,16 +41,13 @@ Public Sub _New()
   Srv.Port = Listened_port
   Srv.Type = Net.Internet
   Srv.Listen()
-
 End
 
 
 Public Function Parse_Request(Req As String) As String[]
-   
    Dim req_ar As String[]
    Dim req_tmp As String[]
    Dim Cook As String[]
-   
    req_ar = Split(req, gb.crlf, "", True)
    
    For Each rstr As String In req_ar
@@ -71,7 +64,7 @@ Public Function Parse_Request(Req As String) As String[]
          Next
       Else
       Endif
-      
+
    Next
    Return req_tmp
 End
