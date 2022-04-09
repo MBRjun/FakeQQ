@@ -1,0 +1,12 @@
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,52,16)
+  Resizable = False
+  { Label1 Label
+    MoveScaled(0,0,52,16)
+    Font = Font["+3"]
+    Alignment = Align.Center
+    Text = ("加载中 ") & "..."
+  }
+}

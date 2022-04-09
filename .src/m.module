@@ -1,0 +1,30 @@
+' Gambas module file
+
+Public CurSession As String = ""
+Public SessionList As Variant
+Public Sessions As New Collection
+
+Public Sub CQApi(Endpoint As String, Optional Params As String[] = []) As Variant 
+    Dim url As String, retval As String
+    URL = "http://127.0.0.1:5700/" & endpoint & "?" & Params.Join("&")
+    retval = http.Get(url)
+    Return JSON.Decode(retval)["data"]
+End
+
+Public Function GroupPic(GroupID As String) As String
+    Dim FilePath As String
+    FilePath = g.localpath & "/fakeqqdata/group_images/" & groupid & ".jpg"
+    If Not Exist(filepath) Then 
+        Exec ["curl", "https://p.qlogo.cn/gh/" & GroupID & "/" & GroupID & "/100", "-o", FilePath] Wait
+    Endif 
+    Return filepath
+End
+
+Public Function UserPic(UserID As String) As String
+    Dim FilePath As String
+    FilePath = g.localpath & "/fakeqqdata/user_images/" & userid & ".jpg"
+    If Not Exist(filepath) Then 
+        Exec ["curl", "https://q1.qlogo.cn/g?b=qq&nk=" & userid & "&s=100", "-o", FilePath] Wait
+    Endif 
+    Return filepath
+End

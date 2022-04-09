@@ -1,0 +1,85 @@
+' Gambas class file
+
+'HTTP服务器，用于收消息
+'基于 https://forum.gambas.one/viewtopic.php?f=5&t=979
+Export
+Public Clients As Object[]
+Public Srv As ServerSocket
+Public Listened_port As Integer = 5580
+Public Nbr_Clients As Integer = 0
+Public Distant_Host As String
+
+Public Sub Socket_Read()
+
+  Dim sCad As String
+  Dim page_html As String
+  Dim req_str As String[]
+  Dim args_str As String[]
+  Dim html_lect As String
+  
+  Read #Last, sCad, Lof(Last)
+  req_str = Parse_Request(sCad)
+  page_html = "HTTP/1.1 200 OK" & gb.crlf & gb.crlf
+  Write #Last, page_html, Len(page_html)
+  Close #Last
+  Clients.Remove(Clients.Find(Last))
+  frmMain.TriggerMessage(JSON.Decode(req_str[2]))
+End
+
+Public Sub Socket_Closed() 
+  Clients.Remove(Clients.Find(Last))
+End
+
+Public Sub Srv_Connection(Host As String)
+
+   Dim MySock As Socket
+   MySock = Srv.Accept()
+   Clients.Add(MySock)
+   nbr_clients = Clients.count
+   Distant_Host = Host
+End
+
+Public Sub _New() 
+  Clients = New Object[]
+  Srv = New ServerSocket As "Srv"
+  Srv.Port = Listened_port
+  Srv.Type = Net.Internet
+  Srv.Listen()
+
+End
+
+
+Public Function Parse_Request(Req As String) As String[]
+   
+   Dim req_ar As String[]
+   Dim req_tmp As String[]
+   Dim Cook As String[]
+   
+   req_ar = Split(req, gb.crlf, "", True)
+   
+   For Each rstr As String In req_ar
+      If Left(rstr, 3) = "GET" Then 
+         req_tmp = Split(rstr, " ?", "", True)
+      Else If Left(rstr, 4) = "POST" Then
+         req_tmp = Split(rstr, " ?", "", True)
+         req_tmp.Add(req_ar[req_ar.count - 1], 2) 
+         
+      Else If Left(rstr, 6) = "Cookie" Then
+         Cook = Split(rstr, ": =", "", True)
+         For i As Integer = 0 To Cook.count - 1
+            req_tmp.Add(Cook[i])
+         Next
+      Else
+      Endif
+      
+   Next
+   Return req_tmp
+End
+Public Function Parse_Args(arg As String) As String[]
+   Dim args_array As String[] = Split(arg, "=&", "", False)
+   If args_array.Count > 1 Then
+      For i As Integer = 0 To (args_array.Count - 1) Step 2
+      Next
+   Endif
+   Return args_array
+End

@@ -1,0 +1,3 @@
+# FakeQQ
+
+Fake QQ client 

@@ -1,0 +1,20 @@
+' Gambas module file
+
+Public Function Get(url As String) As String
+    Dim client As New HttpClient As "client"
+    With client
+        .URL = url
+        .async = False
+        .Get()
+    End With
+    ' an error occured
+    If client.Status < 0 Then
+        Return ""
+    Endif
+    ' no data available
+    If Not Lof(client) Then
+        Return ""
+    Endif
+    ' Reads the data from the server and returns it as a String
+    Return Read #client, Lof(client)
+End

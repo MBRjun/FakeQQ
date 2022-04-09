@@ -1,0 +1,109 @@
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,41,49)
+  Arrangement = Arrange.Vertical
+  { Panel1 Panel
+    MoveScaled(0,0,41,12)
+    Arrangement = Arrange.Vertical
+    { lblTitle Label
+      MoveScaled(1,1,40,8)
+      Font = Font["+5"]
+      Alignment = Align.Center
+      Text = ("Fake QQ")
+    }
+  }
+  { Panel3 Panel
+    MoveScaled(1,15,53,8)
+    Arrangement = Arrange.Horizontal
+    { Panel7 Panel
+      MoveScaled(1,3,1,3)
+    }
+    { Panel4 Panel
+      MoveScaled(2,2,7,5)
+      { lblQQUIN Label
+        MoveScaled(2,0,5,4)
+        Text = ("帐号")
+      }
+    }
+    { Panel5 Panel
+      MoveScaled(9,2,38,5)
+      Expand = True
+      Arrangement = Arrange.Vertical
+      { txtUIN TextBox
+        MoveScaled(-1,0,30,4)
+      }
+    }
+    { Panel6 Panel
+      MoveScaled(49,3,3,4)
+    }
+  }
+  { Panel8 Panel
+    MoveScaled(1,23,53,8)
+    Arrangement = Arrange.Horizontal
+    { Panel9 Panel
+      MoveScaled(1,3,1,3)
+    }
+    { Panel10 Panel
+      MoveScaled(2,2,7,5)
+      { lblQQPassword Label
+        MoveScaled(2,0,5,4)
+        ToolTip = ("点击切换是否可视")
+        Text = ("密码")
+      }
+    }
+    { Panel11 Panel
+      MoveScaled(9,2,38,5)
+      Expand = True
+      Arrangement = Arrange.Vertical
+      { txtPassword TextBox
+        MoveScaled(0,0,29,4)
+        Password = True
+      }
+    }
+    { Panel12 Panel
+      MoveScaled(49,3,3,4)
+    }
+  }
+  { Panel2 Panel
+    MoveScaled(1,31,53,8)
+    Arrangement = Arrange.Horizontal
+    { Panel13 Panel
+      MoveScaled(1,3,1,3)
+    }
+    { Panel14 Panel
+      MoveScaled(2,2,7,5)
+      { lblQQPassword2 Label
+        MoveScaled(2,0,5,4)
+        Text = ("协议")
+      }
+    }
+    { Panel15 Panel
+      MoveScaled(9,2,21,5)
+      Arrangement = Arrange.Vertical
+      { cbProtocol ComboBox
+        MoveScaled(0,0,19,4)
+        List = [("iPad"), ("Mac OS"), ("安卓手机"), ("安卓手表")]
+      }
+    }
+    { Panel16 Panel
+      MoveScaled(30,3,22,4)
+      Expand = True
+    }
+  }
+  { Panel17 Panel
+    MoveScaled(0,41,41,5)
+    Arrangement = Arrange.Horizontal
+    { Panel18 Panel
+      MoveScaled(0,0,9,10)
+    }
+    { btnLogin Button
+      MoveScaled(10,0,20,5)
+      Expand = True
+      Text = ("登录")
+    }
+    { Panel19 Panel
+      MoveScaled(31,1,9,10)
+    }
+  }
+}

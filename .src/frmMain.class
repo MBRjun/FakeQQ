@@ -1,0 +1,62 @@
+' Gambas class file
+
+Public Server As Csvr
+
+Public Sub Form_Open()
+    frmLoad.show
+    Wait 0.01
+    If g.debugmode Then 
+        frmLoad.Title = Application.title & " " & Application.version
+        g.localpath = User.Home & "/.local/share/fakeqq"
+        G.Conf = New Settings(g.localpath & "/fakeqq.conf")
+    Endif
+    Server = New Csvr
+    Me.Title = Application.title & " " & Application.version
+    tmr.Delay = g.conf["App/TimerInterval", 500]
+    tmr.Enabled = True
+    '加载会话列表
+    cmSession.Clear
+    Print cmSession.Columns.count
+    m.SessionList = m.cqapi("get_group_list")
+    Dim Session As Variant
+    For Each Session In m.SessionList
+        cmSession.Add(session["group_id"], session["group_name"], Picture.Load(m.GroupPic(session["group_id"])).Stretch(32, 32))
+    Next
+    frmLoad.hide
+End
+
+Public Sub tmr_Timer()
+If m.cursession = "" Then 
+    Me.Title = Application.title & " " & Application.version 
+Else 
+    Me.Title = m.cursession & " - " & Application.title & " " & Application.version 
+Endif
+End
+
+Public Sub TriggerMessage(Message As Collection)
+    Dim Exists As Boolean, TemplateCollection As New Collection
+    If Message["post_type"] = "message" Then
+        If m.sessions.Exist(CStr(Message["group_id"])) = False Then
+            m.sessions.add(TemplateCollection, CStr(Message["group_id"]))
+        Endif
+        m.sessions[CStr(Message["group_id"])].add(message, CStr(Message["message_id"]))
+        Print Message["message"]
+    Endif
+    If cmSession.key = Message["group_id"] Then RenderMessage(Message["group_id"])
+End
+
+Public Sub cmSession_Click()
+    RenderMessage(cmSession.key)
+End
+
+Public Sub RenderMessage(SessionID As String)
+    Dim Message As Variant
+    Print cmSession.Key
+    lst.clear
+    If m.sessions.Exist(SessionID) Then
+        For Each message In m.sessions[SessionID]
+            lst.add(Message["message_id"], Message["sender"]["nickname"] & "：" & Message["message"], Picture.Load(m.userpic(Message["sender"]["user_id"])).Stretch(32, 32))
+        Next
+    Endif
+End
+

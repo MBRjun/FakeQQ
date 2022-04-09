@@ -1,0 +1,117 @@
+' Gambas class file
+
+
+
+Public Sub Form_Open()
+    g.localpath = User.Home & "/.local/share/fakeqq"
+    Exec ["mkdir", "-p", g.localpath] '创建本地文件夹
+    G.Conf = New Settings(g.localpath & "/fakeqq.conf")
+    g.uin = G.Conf["Account/UIN", 10001]
+    g.password = G.Conf["Account/Password", ""]
+    g.protocol = G.Conf["Account/Protocol", "iPad"]
+    txtUIN.Text = g.uin
+    txtPassword.Text = g.password
+    cbProtocol.Text = g.protocol
+    Me.Title = Application.title & " " & Application.version & " - 登录"
+    frmLoad.Title = Application.title & " " & Application.version
+    lblTitle.Text = Application.title
+    If Exist(Application.path & "/go-cqhttp") = False And Exist("/usr/bin/go-cqhttp") = False Then 
+        Message.Warning("go-cqhttp 未找到，请先通过包管理器安装或直接放在程序目录下")
+        Quit
+    Endif
+    If Not Exist(g.localpath & "/go-cqhttp") Then
+        If Exist("/usr/bin/go-cqhttp") Then 
+            Copy "/usr/bin/go-cqhttp" To g.localpath & "/go-cqhttp"
+        Else 
+            '使用自带gocq
+            Copy Application.path & "/go-cqhttp" To g.localpath & "/go-cqhttp"
+        Endif
+    Endif
+    Exec ["chmod", "+x", g.localpath & "/go-cqhttp"] Wait
+    '加载
+    
+End
+
+Private Sub LoginQQ()
+    g.uin = txtUIN.Text
+    g.password = txtPassword.Text
+    g.protocol = cbProtocol.text
+    '保存配置
+    g.conf["Account/UIN"] = g.uin
+    g.conf["Account/Password"] = g.password
+    g.conf["Account/Protocol"] = g.protocol
+    '生成配置文件
+    File.Save(g.localpath & "/config.yml", Replace(Replace(g.configdefault, "QQ_UIN", g.uin), "QQ_PASSWORD", g.password))
+    Select Case g.protocol
+        Case "iPad"
+        File.Save(g.localpath & "/device.json", Replace(g.devicedefault, "PROTOCOL", "0"))
+        Case "Mac OS"
+        File.Save(g.localpath & "/device.json", Replace(g.devicedefault, "PROTOCOL", "3"))
+        Case "安卓手机"
+        File.Save(g.localpath & "/device.json", Replace(g.devicedefault, "PROTOCOL", "1"))
+        Case "安卓手表"
+        File.Save(g.localpath & "/device.json", Replace(g.devicedefault, "PROTOCOL", "2"))
+    End Select
+    Try Kill g.localpath & "/qrcode.png"
+    If Not Exist(g.localpath & "/data") Then'修复权限
+        Mkdir g.localpath & "/data"
+        Mkdir g.localpath & "/data/cache"
+        Mkdir g.localpath & "/data/images"
+        Mkdir g.localpath & "/data/leveldb-v3"
+        Mkdir g.localpath & "/data/videos"
+        Mkdir g.localpath & "/data/voices"
+        Mkdir g.localpath & "/data/images/guild-images"
+        Mkdir g.localpath & "/logs"
+    Endif
+    If Not Exist(g.localpath & "/fakeqqdata") Then'创建配置文件夹
+        Mkdir g.localpath & "/fakeqqdata"
+        Mkdir g.localpath & "/fakeqqdata/images"
+    Endif
+    g.OutputCacheEnabled = True
+    Exec [g.localpath & "/go-cqhttp"] With ["PWD=" & g.localpath] For Read As "CQProc"
+    btnLogin.Text = "登录中 ... 5"
+    Wait 1
+    btnLogin.Text = "登录中 ... 4"
+    Wait 1
+    btnLogin.Text = "登录中 ... 3"
+    Wait 1
+    btnLogin.Text = "登录中 ... 2"
+    Wait 1
+    btnLogin.Text = "登录中 ... 1"
+    Wait 1
+    btnLogin.Text = "登录中 ..."
+    Do Until InStr(g.outputcache, "127.0.0.1:5580") <> False
+        Wait 0.1
+        If Exist(g.localpath & "/qrcode.png") Then 
+            Message("登录需要验证码，请扫码验证。")
+            Exec ["xdg-open", g.localpath & "/qrcode.png"]
+        Endif
+    Loop
+    g.OutputCacheEnabled = False
+    btnLogin.Text = "登录成功"
+    Me.hide
+    frmMain.show
+    
+End
+
+Public Sub CQProc_Read()
+  Dim sLine As String
+  Read #Last, sLine, -256
+  Print sLine
+  If G.OutputCacheEnabled Then g.outputcache &= sLine
+End
+
+
+Public Sub btnLogin_Click()
+    If txtUIN.Text = "" Then Return
+    If txtPassword.text = "" Then Return
+    LoginQQ
+End
+
+Public Sub lblQQPassword_MouseDown()
+    If txtPassword.Password Then 
+        txtPassword.Password = False
+    Else 
+        txtPassword.Password = True
+    Endif
+End
