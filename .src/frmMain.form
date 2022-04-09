@@ -15,10 +15,23 @@
   { Panel2 Panel
     MoveScaled(33,1,82,66)
     Expand = True
-    Arrangement = Arrange.Fill
-    Margin = True
-    { lst ListView
-      MoveScaled(2,2,76,60)
+    Arrangement = Arrange.Vertical
+    { Panel3 Panel
+      MoveScaled(2,2,77,56)
+      Expand = True
+      Arrangement = Arrange.Fill
+      Margin = True
+      { lst ListView
+        MoveScaled(0,0,76,46)
+      }
+    }
+    { Panel4 Panel
+      MoveScaled(2,58,79,6)
+      Arrangement = Arrange.Fill
+      Margin = True
+      { txtMsg TextBox
+        MoveScaled(1,1,73,3)
+      }
     }
   }
   { tmr #Timer

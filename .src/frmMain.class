@@ -60,3 +60,9 @@ Public Sub RenderMessage(SessionID As String)
     Endif
 End
 
+
+Public Sub txtMsg_KeyPress()
+
+    Print Key.state
+
+End
