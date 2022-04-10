@@ -4,4 +4,6 @@ Fake QQ client
 
 名称：暂定（FakeQQ已经有人用了）
 
-依赖：`gambas3-runtime` `go-cqhttp-dev-git`
+`fakeqq` 依赖：`gambas3-runtime` `go-cqhttp-dev-git`
+
+`fakeqq-with-runtime` 依赖：`go-cqhttp-dev-git`
