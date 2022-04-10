@@ -1,10 +1,11 @@
 ' Gambas module file
 
 Public CurSession As String = ""
-Public SessionList As Variant
+Public SessionList As New Collection
 Public Sessions As New Collection
+Public Nickname As String 
 
-Public Sub CQApi(Endpoint As String, Optional Params As String[] = []) As Variant 
+Public Sub CQApi(Endpoint As String, Optional Params As String[] = []) As Variant
     Dim url As String, retval As String
     URL = "http://127.0.0.1:5700/" & endpoint & "?" & Params.Join("&")
     retval = http.Get(url)

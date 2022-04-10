@@ -1,12 +1,14 @@
 ' Gambas class file
 
 Public Server As Csvr
+Public NeedRender As Boolean = False
 
 Public Sub Form_Open()
     frmLoad.show
     Wait 0.01
     If g.debugmode Then 
         frmLoad.Title = Application.title & " " & Application.version
+        g.uin = "3526514925"
         g.localpath = User.Home & "/.local/share/fakeqq"
         G.Conf = New Settings(g.localpath & "/fakeqq.conf")
     Endif
@@ -14,55 +16,121 @@ Public Sub Form_Open()
     Me.Title = Application.title & " " & Application.version
     tmr.Delay = g.conf["App/TimerInterval", 500]
     tmr.Enabled = True
-    '加载会话列表
+    '加载会话列表 - 群
     cmSession.Clear
-    Print cmSession.Columns.count
-    m.SessionList = m.cqapi("get_group_list")
-    Dim Session As Variant
-    For Each Session In m.SessionList
-        cmSession.Add(session["group_id"], session["group_name"], Picture.Load(m.GroupPic(session["group_id"])).Stretch(32, 32))
+    Dim SessionList As Variant
+    SessionList = m.cqapi("get_group_list")
+    Dim Session As Collection
+    For Each Session In SessionList
+        cmSession.Add("g" & session["group_id"], session["group_name"], Picture.Load(m.GroupPic(session["group_id"])).Stretch(32, 32))
+        m.sessionlist.Add(session["group_name"], "g" & session["group_id"])
     Next
+    Print "加载了群列表 " & SessionList.count
+    SessionList = m.cqapi("get_friend_list")
+    For Each Session In SessionList
+        m.sessionlist.Add(session["remark"], "f" & session["user_id"])
+    Next
+    Print "加载了好友列表 " & SessionList.count
+    Me.Title = Application.title & " " & Application.version 
+    sessionlist = m.cqapi("get_login_info")
+    m.nickname = sessionlist["nickname"]
     frmLoad.hide
 End
 
 Public Sub tmr_Timer()
-If m.cursession = "" Then 
-    Me.Title = Application.title & " " & Application.version 
-Else 
-    Me.Title = m.cursession & " - " & Application.title & " " & Application.version 
-Endif
+If NeedRender Then renderMessage(m.cursession)
+NeedRender = False
 End
 
 Public Sub TriggerMessage(Message As Collection)
-    Dim Exists As Boolean, TemplateCollection As New Collection
+    Dim TemplateCollection As New Collection
     If Message["post_type"] = "message" Then
-        If m.sessions.Exist(CStr(Message["group_id"])) = False Then
-            m.sessions.add(TemplateCollection, CStr(Message["group_id"]))
+        '收到群消息
+        If Message["message_type"] = "group" Then
+            If m.sessions.Exist("g" & CStr(Message["group_id"])) = False Then
+                m.sessions.add(TemplateCollection, "g" & CStr(Message["group_id"]))
+            Endif
+            m.sessions["g" & (Message["group_id"])].add(message, CStr(Message["message_id"]))
+            cmSession["g" & (Message["group_id"])].MoveFirst
+            If m.cursession = "g" & (Message["group_id"]) Then
+                cmSession["g" & (Message["group_id"])].Selected = True
+            Else 
+                If m.cursession <> "" Then cmSession[m.cursession].Selected = True
+            Endif
+            Print "收到群消息 " & Message["group_id"] & " " & Message["message"]
+        Else If Message["message_type"] = "private" Then
+        '收到好友消息
+            If cmSession.Exist("f" & Message["user_id"]) = False Then
+                '添加列表
+                cmSession.Add("f" & Message["user_id"], m.sessionlist["f" & Message["user_id"]], picture.load(m.UserPic(message["user_id"])).Stretch(32, 32))
+            Endif
+            If m.sessions.Exist("f" & CStr(Message["user_id"])) = False Then
+                m.sessions.add(TemplateCollection, "f" & CStr(Message["user_id"]))
+            Endif
+            m.sessions["f" & (Message["user_id"])].add(message, CStr(Message["message_id"]))
+            cmSession["f" & (Message["user_id"])].MoveFirst
+            If m.cursession = "f" & (Message["user_id"]) Then
+                cmSession["f" & (Message["user_id"])].Selected = True
+            Else 
+                If m.cursession <> "" Then cmSession[m.cursession].Selected = True
+            Endif
+            Print "收到好友消息 " & Message["user_id"] & " " & Message["message"]
         Endif
-        m.sessions[CStr(Message["group_id"])].add(message, CStr(Message["message_id"]))
-        Print Message["message"]
     Endif
-    If cmSession.key = Message["group_id"] Then RenderMessage(Message["group_id"])
+    NeedRender = True
 End
 
 Public Sub cmSession_Click()
-    RenderMessage(cmSession.key)
+    m.cursession = cmSession.key
+    RenderMessage(m.cursession)
 End
 
 Public Sub RenderMessage(SessionID As String)
+    Me.Title = m.sessionlist[m.cursession] & " - " & Application.title & " " & Application.version 
     Dim Message As Variant
-    Print cmSession.Key
+    Print "渲染消息 " & sessionid
     lst.clear
     If m.sessions.Exist(SessionID) Then
         For Each message In m.sessions[SessionID]
-            lst.add(Message["message_id"], Message["sender"]["nickname"] & "：" & Message["message"], Picture.Load(m.userpic(Message["sender"]["user_id"])).Stretch(32, 32))
+            If Message.Exist("self") Then
+                lst.add(Message["message_id"], m.nickname & "：" & Message["message"], Picture.Load(m.userpic(g.uin)).Stretch(32, 32))
+            Else 
+                lst.add(Message["message_id"], Message["sender"]["nickname"] & "：" & Message["message"], Picture.Load(m.userpic(Message["sender"]["user_id"])).Stretch(32, 32))
+            Endif
         Next
     Endif
 End
 
 
 Public Sub txtMsg_KeyPress()
+'发消息
+Dim SendMsgRetval As Variant
+Dim MessageCollection As Collection
+    Dim TemplateCollection As New Collection
+    If Key.Code = Key.Enter Or Key.Code = Key.return Then
+        If m.sessions.Exist(m.cursession) = False Then
+            m.sessions.add(TemplateCollection, m.cursession)
+        Endif
+        If m.cursession <> "" And Left(m.cursession, 1) = "g" Then 
+            '发送群消息
+            SendMsgRetval = m.cqapi("send_group_msg", ["group_id=" & Replace(m.cursession, "g", ""), "message=" & txtMsg.text])
+            MessageCollection = ["user_id": g.uin, "message": txtMsg.text, "message_id": SendMsgRetval["message_id"], "self": True]
+            m.sessions[m.cursession].add(MessageCollection, SendMsgRetval["message_id"])
+            Print "发送群消息" & txtMsg.text
+        Else 
+            '发送好友消息
+            Print "发送好友消息" & txtMsg.text
+            SendMsgRetval = m.cqapi("send_private_msg", ["user_id=" & Replace(m.cursession, "f", ""), "message=" & txtMsg.text])
+            MessageCollection = ["user_id": g.uin, "message": txtMsg.text, "message_id": SendMsgRetval["message_id"], "self": True]
+            m.sessions[m.cursession].add(MessageCollection, SendMsgRetval["message_id"])
+        Endif
+        lst.add(SendMsgRetval["message_id"], m.nickname & "：" & txtMsg.text, Picture.Load(m.userpic(g.uin)).Stretch(32, 32))
+        txtMsg.Text = ""
+    Endif
+End
 
-    Print Key.state
-
+Public Sub lst_Click()
+    If Mouse.Button = Mouse.right Then 
+        
+    Endif
 End
