@@ -16,24 +16,65 @@ Public Sub Form_Open()
     Me.Title = Application.title & " " & Application.version
     tmr.Delay = g.conf["App/TimerInterval", 500]
     tmr.Enabled = True
-    '加载会话列表 - 群
+    '加载会话列表
     cmSession.Clear
-    Dim SessionList As Variant
-    SessionList = m.cqapi("get_group_list")
     Dim Session As Collection
-    For Each Session In SessionList
-        cmSession.Add("g" & session["group_id"], session["group_name"], Picture.Load(m.GroupPic(session["group_id"])).Stretch(32, 32))
-        m.sessionlist.Add(session["group_name"], "g" & session["group_id"])
-    Next
-    Print "加载了群列表 " & SessionList.count
-    SessionList = m.cqapi("get_friend_list")
-    For Each Session In SessionList
-        m.sessionlist.Add(session["remark"], "f" & session["user_id"])
-    Next
-    Print "加载了好友列表 " & SessionList.count
+    Dim SessionList As Variant
+        SessionList = m.cqapi("get_group_list")
+        For Each Session In SessionList
+            cmSession.Add("g" & session["group_id"], session["group_name"], Picture.Load(m.GroupPic(session["group_id"])).Stretch(32, 32))
+            m.sessionlist.Add(session["group_name"], "g" & session["group_id"])
+        Next
+        Print "加载了群列表 " & SessionList.count
+        SessionList = m.cqapi("get_friend_list")
+        For Each Session In SessionList
+            m.sessionlist.Add(session["remark"], "f" & session["user_id"])
+        Next
+        Print "加载了好友列表 " & SessionList.count
+    If Exist(g.localpath & "/session_list_cache.json") Then 
+        '加载会话列表缓存
+        Dim SessionListItem As Variant 
+        SessionList = JSON.Decode(File.Load(g.localpath & "/session_list_cache.json"))
+        For Each SessionListItem In sessionlist.keys
+            If Left(SessionListItem, 1) = "g" Then 
+                Try cmSession.Add(SessionListItem, sessionlist[SessionListItem], Picture.Load(m.GroupPic(Replace(SessionListItem, "g", ""))).Stretch(32, 32))
+            Else 
+                cmSession.Add(SessionListItem, sessionlist[SessionListItem], Picture.Load(m.UserPic(Replace(SessionListItem, "f", ""))).Stretch(32, 32))
+            Endif
+        Next
+        Print "加载了会话列表缓存"
+    Endif
     Me.Title = Application.title & " " & Application.version 
     sessionlist = m.cqapi("get_login_info")
     m.nickname = sessionlist["nickname"]
+    '加载表情包
+    If Not Exist(g.localpath & "/face") Then 
+        Mkdir g.localpath & "/face"
+        Exec ["tar", "-zxvf", Application.path & "/face.tar.gz", "-C", g.localpath & "/face"]
+    Endif
+    Dim i As Short, j As Short = 0, k As Short = 0, PicturePath As String, FaceComplete As Boolean = False
+    gFace.columns.Count = 11
+    gFace.rows.Count = 27
+    gFace.columns.width = 32
+    gFace.rows.height = 32
+    For i = 0 To 336
+        picturepath = g.localpath & "/face/" & Format$(i, "000")
+        If Exist(picturepath) Then
+            Print i
+            gface[j, k].Picture = picture.Load(PicturePath).Stretch(28, 28)
+            gface[j, k].Tag = Format$(i, "000")
+            If k = 10 Then 
+                k = 0
+                j += 1
+            Else 
+                k += 1
+            Endif
+        Endif
+    Next
+    If Exist(g.localpath & "/session_cache.json") Then 
+        '加载会话缓存
+        m.sessions = JSON.Decode(File.Load(g.localpath & "/session_cache.json"))
+    Endif
     frmLoad.hide
 End
 
@@ -54,10 +95,12 @@ Public Sub TriggerMessage(Message As Collection)
             cmSession["g" & (Message["group_id"])].MoveFirst
             If m.cursession = "g" & (Message["group_id"]) Then
                 cmSession["g" & (Message["group_id"])].Selected = True
+                cmSession["g" & (Message["group_id"])].EnsureVisible
+                NeedRender = True
             Else 
                 If m.cursession <> "" Then cmSession[m.cursession].Selected = True
             Endif
-            Print "收到群消息 " & Message["group_id"] & " " & Message["message"]
+            Print "收到群消息 " & Message["group_id"] & " " & Message["raw_message"]
         Else If Message["message_type"] = "private" Then
         '收到好友消息
             If cmSession.Exist("f" & Message["user_id"]) = False Then
@@ -71,36 +114,39 @@ Public Sub TriggerMessage(Message As Collection)
             cmSession["f" & (Message["user_id"])].MoveFirst
             If m.cursession = "f" & (Message["user_id"]) Then
                 cmSession["f" & (Message["user_id"])].Selected = True
+                cmSession["f" & (Message["user_id"])].EnsureVisible
+                NeedRender = True
             Else 
                 If m.cursession <> "" Then cmSession[m.cursession].Selected = True
             Endif
-            Print "收到好友消息 " & Message["user_id"] & " " & Message["message"]
+            Print "收到好友消息 " & Message["user_id"] & " " & Message["raw_message"]
         Endif
     Endif
-    NeedRender = True
 End
 
 Public Sub cmSession_Click()
     m.cursession = cmSession.key
-    RenderMessage(m.cursession)
+    RenderMessage(m.cursession, True)
 End
 
-Public Sub RenderMessage(SessionID As String)
+Public Sub RenderMessage(SessionID As String, Optional Cleared As Boolean = False)
     Me.Title = m.sessionlist[m.cursession] & " - " & Application.title & " " & Application.version 
     Dim Message As Variant
     Print "渲染消息 " & sessionid
-    lst.clear
+    If Cleared Then lst.clear
     If m.sessions.Exist(SessionID) Then
         For Each message In m.sessions[SessionID]
-            If Message.Exist("self") Then
-                lst.add(Message["message_id"], m.nickname & "：" & Message["message"], Picture.Load(m.userpic(g.uin)).Stretch(32, 32))
-            Else 
-                lst.add(Message["message_id"], Message["sender"]["nickname"] & "：" & Message["message"], Picture.Load(m.userpic(Message["sender"]["user_id"])).Stretch(32, 32))
+            If lst.Exist(Message["message_id"]) = False Then
+                lst.add(Message["message_id"], "", Picture.Load(m.userpic(Message["sender"]["user_id"])).Stretch(32, 32))
+                With lst[Message["message_id"]]
+                    .Tag = Message
+                    .RichText = m.PrintMessage(message)
+                    .EnsureVisible
+                End With
             Endif
         Next
     Endif
 End
-
 
 Public Sub txtMsg_KeyPress()
 '发消息
@@ -113,24 +159,68 @@ Dim MessageCollection As Collection
         Endif
         If m.cursession <> "" And Left(m.cursession, 1) = "g" Then 
             '发送群消息
-            SendMsgRetval = m.cqapi("send_group_msg", ["group_id=" & Replace(m.cursession, "g", ""), "message=" & txtMsg.text])
-            MessageCollection = ["user_id": g.uin, "message": txtMsg.text, "message_id": SendMsgRetval["message_id"], "self": True]
+            SendMsgRetval = m.cqapi("send_group_msg", ["group_id=" & Replace(m.cursession, "g", ""), "message=" & URL.Encode(txtMsg.text)])
+            MessageCollection = m.cqapi("get_msg", ["message_id=" & URL.Encode(SendMsgRetval["message_id"])])
             m.sessions[m.cursession].add(MessageCollection, SendMsgRetval["message_id"])
             Print "发送群消息" & txtMsg.text
         Else 
             '发送好友消息
             Print "发送好友消息" & txtMsg.text
-            SendMsgRetval = m.cqapi("send_private_msg", ["user_id=" & Replace(m.cursession, "f", ""), "message=" & txtMsg.text])
-            MessageCollection = ["user_id": g.uin, "message": txtMsg.text, "message_id": SendMsgRetval["message_id"], "self": True]
+            SendMsgRetval = m.cqapi("send_private_msg", ["user_id=" & Replace(m.cursession, "f", ""), "message=" & URL.Encode(txtMsg.text)])
+            MessageCollection = m.cqapi("get_msg", ["message_id=" & URL.Encode(SendMsgRetval["message_id"])])
             m.sessions[m.cursession].add(MessageCollection, SendMsgRetval["message_id"])
         Endif
-        lst.add(SendMsgRetval["message_id"], m.nickname & "：" & txtMsg.text, Picture.Load(m.userpic(g.uin)).Stretch(32, 32))
         txtMsg.Text = ""
+        NeedRender = True
     Endif
 End
 
+Public MouseMenu As Menu
+Public Sub lst_Menu()
+    Dim MenuItem As Menu
+    Dim MessageMenu As Menu
+    MouseMenu = New Menu(frmmain, False)
+    MenuItem = New Menu(mousemenu) As "CopyMenu"
+    MenuItem.Text = "复制消息"
+    mousemenu.Popup
+End
+
+Public Sub CopyMenu_Click()  
+    Clipboard.copy(lst.Item.text)
+End
+
+
+Public Sub Form_Close()
+    File.Save(g.localpath & "/session_cache.json", JSON.Encode(m.sessions))
+    Dim SessionItem As Variant, SessionListCache As New Collection
+    For Each sessionitem In cmsession.keys
+        SessionListCache.Add(cmsession[sessionitem].text, sessionitem)
+    Next
+    File.Save(g.localpath & "/session_list_cache.json", JSON.Encode(SessionListCache))
+    Quit 
+End
+
 Public Sub lst_Click()
-    If Mouse.Button = Mouse.right Then 
-        
+    Dim Message As Variant = lst.Item.tag
+End
+
+
+Public Sub btnFace_Click()
+    If gface.visible Then
+        gFace.Visible = False
+    Else 
+        gFace.Visible = True
     Endif
 End
+
+Public Sub Form_Arrange()
+    pnlFace.X = Me.width - 384
+    pnlFace.y = Me.height - 352
+End
+
+
+Public Sub gFace_Select()
+    txtMsg.insert("[CQ:face,id=" & gface[gface.row, gface.Column].tag & "]")
+    gface.hide
+End 
+

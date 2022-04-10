@@ -29,3 +29,42 @@ Public Function UserPic(UserID As String) As String
     Endif 
     Return filepath
 End
+
+Public Function CQPic(sUrl As String) As String
+    Dim FilePath As String
+    FilePath = g.localpath & "/fakeqqdata/cq_images/" & Base64$(Replace(Crypt.MD5(sUrl, "fakeqpic"), "", "$1$fakeqpic$")) & ".jpg"
+    If Not Exist(filepath) Then 
+        Exec ["curl", surl, "-o", FilePath] Wait
+    Endif 
+    Return filepath
+End
+
+Public Function PrintMessage(Message As Variant) As String
+    '消息json到richtext(html)
+    'Print JSON.Encode(message)
+    Dim Node As Variant, RetVal As String = "<p>"
+    If Message["sender"]["card"] = "" Then 
+        retval &= Message["sender"]["card"] & "："
+    Else 
+        retval &= Message["sender"]["nickname"] & "："
+    Endif
+    For Each node In Message["message"]
+        Select Case node["type"]
+            Case "text"
+                retval &= node["data"]["text"]
+            Case "at"
+                retval &= "<b>" & node["data"]["text"] & "</b> "
+            Case "face"
+                retval &= "<img src=\"file://" & g.localpath & "/face/" & Format$(node["data"]["id"], "000") & "\" width=\"20\" height=\"20\" >"
+            Case "image"
+                'retval &= "<img src=\"" & m.cqpic(node["data"]["url"]) & "\" width=\"32\" >"
+                retval &= "[图片]"
+            Case "video"
+                retval &= "[视频]"
+            Case Else 
+                retval &= JSON.Encode(node)
+        End Select
+    Next
+    retval &= "</p>"
+    Return retval
+End

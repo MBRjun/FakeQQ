@@ -1,6 +1,6 @@
 ' Gambas class file
 
-
+Public CQProcess As Process
 
 Public Sub Form_Open()
     g.localpath = User.Home & "/.local/share/fakeqq"
@@ -15,19 +15,14 @@ Public Sub Form_Open()
     Me.Title = Application.title & " " & Application.version & " - 登录"
     frmLoad.Title = Application.title & " " & Application.version
     lblTitle.Text = Application.title
-    If Exist(Application.path & "/go-cqhttp") = False And Exist("/usr/bin/go-cqhttp") = False Then 
-        Message.Warning("go-cqhttp 未找到，请先通过包管理器安装或直接放在程序目录下")
-        Quit
+    If Exist(g.localpath & "/node_modules") = False Then 
+        Message("oicq 未找到，点击确定进行安装。")
+        btnLogin.Text = "正在安装依赖"
+        btnLogin.Enabled = False
+        Shell "npm i oicq@1" With ["PWD=" & g.localpath] Wait
+        btnLogin.Text = "登录"
+        btnLogin.Enabled = True
     Endif
-    If Not Exist(g.localpath & "/go-cqhttp") Then
-        If Exist("/usr/bin/go-cqhttp") Then 
-            Copy "/usr/bin/go-cqhttp" To g.localpath & "/go-cqhttp"
-        Else 
-            '使用自带gocq
-            Copy Application.path & "/go-cqhttp" To g.localpath & "/go-cqhttp"
-        Endif
-    Endif
-    Exec ["chmod", "+x", g.localpath & "/go-cqhttp"] Wait
     '加载
     
 End
@@ -41,55 +36,48 @@ Private Sub LoginQQ()
     g.conf["Account/Password"] = g.password
     g.conf["Account/Protocol"] = g.protocol
     '生成配置文件
-    File.Save(g.localpath & "/config.yml", Replace(Replace(g.configdefault, "QQ_UIN", g.uin), "QQ_PASSWORD", g.password))
     Select Case g.protocol
         Case "iPad"
-        File.Save(g.localpath & "/device.json", Replace(g.devicedefault, "PROTOCOL", "0"))
+        File.Save(User.home & "/.oicq/config.js", Replace(g.ConfigDefault, "PROTOCOL", "5"))
         Case "Mac OS"
-        File.Save(g.localpath & "/device.json", Replace(g.devicedefault, "PROTOCOL", "3"))
+        File.Save(User.home & "/.oicq/config.js", Replace(g.ConfigDefault, "PROTOCOL", "4"))
         Case "安卓手机"
-        File.Save(g.localpath & "/device.json", Replace(g.devicedefault, "PROTOCOL", "1"))
+        File.Save(User.home & "/.oicq/config.js", Replace(g.ConfigDefault, "PROTOCOL", "1"))
         Case "安卓手表"
-        File.Save(g.localpath & "/device.json", Replace(g.devicedefault, "PROTOCOL", "2"))
+        File.Save(User.home & "/.oicq/config.js", Replace(g.ConfigDefault, "PROTOCOL", "2"))
+        Case "安卓平板"
+        File.Save(User.home & "/.oicq/config.js", Replace(g.ConfigDefault, "PROTOCOL", "3"))
     End Select
     Try Kill g.localpath & "/qrcode.png"
-    If Not Exist(g.localpath & "/data") Then'修复权限
-        Mkdir g.localpath & "/data"
-        Mkdir g.localpath & "/data/cache"
-        Mkdir g.localpath & "/data/images"
-        Mkdir g.localpath & "/data/leveldb-v3"
-        Mkdir g.localpath & "/data/videos"
-        Mkdir g.localpath & "/data/voices"
-        Mkdir g.localpath & "/data/images/guild-images"
-        Mkdir g.localpath & "/logs"
-    Endif
     If Not Exist(g.localpath & "/fakeqqdata") Then'创建配置文件夹
         Mkdir g.localpath & "/fakeqqdata"
-        Mkdir g.localpath & "/fakeqqdata/images"
+        Mkdir g.localpath & "/fakeqqdata/group_images"
+        Mkdir g.localpath & "/fakeqqdata/user_images"
+        Mkdir g.localpath & "/fakeqqdata/cq_images"
     Endif
     g.OutputCacheEnabled = True
-    Exec [g.localpath & "/go-cqhttp"] With ["PWD=" & g.localpath] For Read As "CQProc"
-    btnLogin.Text = "登录中 ... 5"
-    Wait 1
-    btnLogin.Text = "登录中 ... 4"
-    Wait 1
-    btnLogin.Text = "登录中 ... 3"
-    Wait 1
-    btnLogin.Text = "登录中 ... 2"
-    Wait 1
-    btnLogin.Text = "登录中 ... 1"
-    Wait 1
+    System.Shell = "/bin/bash"
+    CQProcess = Shell g.localpath & "/node_modules/oicq/bin/oicq " & g.uin For Input Output As "CQProc"
     btnLogin.Text = "登录中 ..."
-    Do Until InStr(g.outputcache, "127.0.0.1:5580") <> False
+    btnLogin.Enabled = False
+    Dim QRCompleted As Boolean = False, PasswordCompleted As Boolean = False
+    Do Until InStr(g.outputcache, "你已成功登录") <> False
         Wait 0.1
-        If Exist(g.localpath & "/qrcode.png") Then 
-            Message("登录需要验证码，请扫码验证。")
-            Exec ["xdg-open", g.localpath & "/qrcode.png"]
+        If InStr(g.outputcache, "请输入密码") <> False And PasswordCompleted = False Then
+            PasswordCompleted = True 
+            Wait 0.1
+            Write #CQProcess, g.password & "\n"
+        Endif
+        If InStr(g.outputcache, "请用手机QQ扫描二维码") <> False And QRCompleted = False Then 
+            Exec ["xdg-open", user.home & "/.oicq/" & g.uin & "/qrcode.png"]
+            Message.Info("登录需要验证码，请扫码验证。\n扫码完成后，点击“我已扫码”。", "我已扫码")
+            QRCompleted = True
+            Write #CQProcess, "\n"
         Endif
     Loop
     g.OutputCacheEnabled = False
     btnLogin.Text = "登录成功"
-    Me.hide
+    Me.Close
     frmMain.show
     
 End
@@ -104,7 +92,6 @@ End
 
 Public Sub btnLogin_Click()
     If txtUIN.Text = "" Then Return
-    If txtPassword.text = "" Then Return
     LoginQQ
 End
 
@@ -115,3 +102,4 @@ Public Sub lblQQPassword_MouseDown()
         txtPassword.Password = True
     Endif
 End
+

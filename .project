@@ -1,10 +1,11 @@
 # Gambas Project File 3.0
 Title=FakeQQ
 Startup=frmLogin
-Version=0.0.2
+Version=0.0.3
 Component=gb.image
 Component=gb.gui
 Component=gb.form
+Component=gb.crypt
 Component=gb.settings
 Component=gb.net
 Component=gb.net.curl

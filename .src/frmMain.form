@@ -7,31 +7,58 @@
     MoveScaled(1,1,31,66)
     Arrangement = Arrange.Fill
     Margin = True
-    { cmSession ColumnView
-      MoveScaled(0,1,27,62)
-      Header = False
+    { cmSession ListView
+      MoveScaled(0,1,31,65)
+      ScrollBar = Scroll.Vertical
     }
   }
   { Panel2 Panel
     MoveScaled(33,1,82,66)
     Expand = True
     Arrangement = Arrange.Vertical
+    Spacing = True
+    Margin = True
     { Panel3 Panel
       MoveScaled(2,2,77,56)
       Expand = True
       Arrangement = Arrange.Fill
-      Margin = True
       { lst ListView
         MoveScaled(0,0,76,46)
+        ScrollBar = Scroll.Vertical
+      }
+      { tmrScroll #Timer
+        #MoveScaled(71,14)
+        Delay = 100
       }
     }
     { Panel4 Panel
-      MoveScaled(2,58,79,6)
-      Arrangement = Arrange.Fill
-      Margin = True
+      MoveScaled(2,60,79,4)
+      Arrangement = Arrange.Horizontal
+      Spacing = True
       { txtMsg TextBox
-        MoveScaled(1,1,73,3)
+        MoveScaled(1,1,69,3)
+        Expand = True
       }
+      { Panel5 Panel
+        MoveScaled(73,0,4,5)
+        Arrangement = Arrange.Fill
+        { btnFace Button
+          MoveScaled(1,0,5,4)
+          Text = ("🙂")
+        }
+      }
+    }
+  }
+  { pnlFace Panel
+    MoveScaled(67,23,47,38)
+    Ignore = True
+    Arrangement = Arrange.Fill
+    Margin = True
+    { gFace GridView
+      MoveScaled(8,6,28,26)
+      Visible = False
+      Mode = Select.Single
+      ScrollBar = Scroll.Vertical
     }
   }
   { tmr #Timer

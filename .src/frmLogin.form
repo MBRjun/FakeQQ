@@ -58,6 +58,7 @@
       Arrangement = Arrange.Vertical
       { txtPassword TextBox
         MoveScaled(0,0,29,4)
+        ToolTip = ("密码为空则使用扫码登录")
         Password = True
       }
     }
@@ -83,7 +84,7 @@
       Arrangement = Arrange.Vertical
       { cbProtocol ComboBox
         MoveScaled(0,0,19,4)
-        List = [("iPad"), ("Mac OS"), ("安卓手机"), ("安卓手表")]
+        List = [("iPad"), ("Mac OS"), ("安卓手机"), ("安卓平板"), ("安卓手表")]
       }
     }
     { Panel16 Panel
