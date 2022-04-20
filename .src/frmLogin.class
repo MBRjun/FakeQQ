@@ -39,7 +39,7 @@ Private Sub LoginQQ()
     Select Case g.protocol
         Case "iPad"
         File.Save(User.home & "/.oicq/config.js", Replace(g.ConfigDefault, "PROTOCOL", "5"))
-        Case "Mac OS"
+        Case "macOS"
         File.Save(User.home & "/.oicq/config.js", Replace(g.ConfigDefault, "PROTOCOL", "4"))
         Case "安卓手机"
         File.Save(User.home & "/.oicq/config.js", Replace(g.ConfigDefault, "PROTOCOL", "1"))
