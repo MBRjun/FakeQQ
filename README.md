@@ -9,7 +9,7 @@ Fake QQ client
 `fakeqq-with-runtime` 依赖：`go-cqhttp-dev-git`
 
 # 编译
-```
+```shell
 git clone https://github.com/YidaozhanYa/FakeQQ
 gambas3 ./FakeQQ
 ```
